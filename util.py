@@ -65,7 +65,7 @@ def prompt_for_user_token(username, scope=None, client_id = None,
             #
             p1 = Popen(['python', 'auth_server.py'], stdout=PIPE)
             p2 = Popen(['open', '%s' % authurl])
-            token = p1.communicate()
+            redirected_url = p1.communicate()
             p2.kill()
             print("Opened %s in your browser" % auth_url)
         except:
@@ -74,9 +74,9 @@ def prompt_for_user_token(username, scope=None, client_id = None,
         print()
         print()
         try:
-            response = raw_input("Enter the URL you were redirected to: ")
+            response = redirected_url
         except NameError:
-            response = input("Enter the URL you were redirected to: ")
+            response = redirected_url
 
         print()
         print() 
