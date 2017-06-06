@@ -3,7 +3,7 @@
 Skrraper is a simple Python app that searches and downloads new music.
 
 ## Getting Started
-* Install Hashbrown
+* Install Skrraper
 
 To make object User Object:
 ```python
