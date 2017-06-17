@@ -30,7 +30,7 @@ logger = logging.getLogger()
 
 #	Change config to include log file, database, and location to save songs.
 #	Create a config object to hold attributes, including reddit_url, reddit_payload, retry_dir, retry_file
-def readConfig():
+def readConfig(env):
 	"""
 	Read config file
 	"""
@@ -110,6 +110,7 @@ def checkDirectories(config):
 	Check needed directories
 	Create directories if they are not found
 	"""
+	#Check for logging directory
 	if not os.path.exists(config['retry']['retry_dir']):
 		os.makedirs(config['retry']['retry_dir'])
 	if not os.path.exists(config['song']['song_dir']):
