@@ -86,7 +86,7 @@ def getSongYoutube(submission):
 		#Add song to database
 		submission_audio 		= submission_video.getbestaudio()
 		logger.info(submission.title)
-		submission_audio.download(filepath='songs/')
+		submission_audio.download(filepath=config['song']['song_dir'])
 
 def main(config):
 	"""
