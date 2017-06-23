@@ -68,7 +68,14 @@ def getSongYoutube(submission):
 	"""
 	submission_video = None
 	if(('youtube' in submission.url) or ('youtu.be' in submission.url)):
-		submission_video = pafy.new(submission.url)
+		"""
+		IOError: ERROR: zx1sEkIi5vg: Youtube says: This video has been removed by the user.
+		"""
+		try:
+			submission_video = pafy.new(submission.url)
+		except IOError as err:
+			logger.error("IOError error: {0}".format(err))
+
 	else:
 		youtube_html	 		= requests.get('https://www.youtube.com/results',params={'search_query': submission.title})
 		youtube_content			= BeautifulSoup(youtube_html.content)
@@ -85,8 +92,8 @@ def getSongYoutube(submission):
 		#Send complete message to Slack
 		#Add song to database
 		submission_audio 		= submission_video.getbestaudio()
-		logger.info(submission.title)
-		submission_audio.download(filepath=config['song']['song_dir'])
+		logger.info('Downloaded: %s', str(submission.title.encode('utf-8')))
+		#submission_audio.download(filepath=config['song']['song_dir'], quiet=true)
 
 def main(config):
 	"""
