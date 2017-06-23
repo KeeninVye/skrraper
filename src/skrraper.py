@@ -20,7 +20,7 @@ logging_config = dict(
               'level': logging.INFO}
         },
     root = {
-        'handlers': ['fh','h'],
+        'handlers': ['fh'],
         'level': logging.INFO,
         }
 )
@@ -93,7 +93,7 @@ def getSongYoutube(submission):
 		#Add song to database
 		submission_audio 		= submission_video.getbestaudio()
 		logger.info('Downloaded: %s', str(submission.title.encode('utf-8')))
-		#submission_audio.download(filepath=config['song']['song_dir'], quiet=true)
+		submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
 
 def main(config):
 	"""
