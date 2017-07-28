@@ -105,7 +105,10 @@ def getSongYoutube(submission, c):
 			submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
 			c.execute("INSERT OR REPLACE INTO songs (submission_title, submission_url, artist, song_title, song_url) VALUES (?, ?, ?, ?, ?);", (submission.title, submission.url, song_artist.strip(), song_title.strip(), submission.url))
 		except ValueError as err:
-			logger.error("ValueError trying to download: %s FROM %s", str(submission.title.encode('utf-8')), str(submission.url))
+			logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
+			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, err))
+		except IOError as err:
+			logger.error("IOError : %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
 			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, err))
 	return
 
