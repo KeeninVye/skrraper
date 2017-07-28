@@ -72,11 +72,11 @@ def getSongYoutube(submission, c):
 		IOError: ERROR: zx1sEkIi5vg: Youtube says: This video has been removed by the user.
 		"""
 		try:
-			submission_video = pafy.new(submission.url)
+			submission_video = pafy.new(str(submission.url))
 		except IOError as err:
-			logger.error("IOError error: {0}".format(err))
+			logger.error("IOError error: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
 		except ValueError as err:
-			logger.error("IOError error: {0}".format(err))
+			logger.error("ValueError error: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
 
 	if(None == submission_video):
 		youtube_html	 		= requests.get('https://www.youtube.com/results',params={'search_query': submission.title})
@@ -85,10 +85,10 @@ def getSongYoutube(submission, c):
 		if youtube_results:
 			submission.url 		= 'https://www.youtube.com'+str(youtube_results[0]['href'].encode('utf-8'))
 			try:
-				submission_video 	= pafy.new(submission.url)
+				submission_video 	= pafy.new(str(submission.url))
 			except ValueError:
 				logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
-				c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, str(err)))
+				c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, str(submission.url), str(err)))
 		else:#Add song to retry list/database
 			logger.warn('Could not find song: %s', str(submission.title.encode('utf-8')))
 			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, "Song not found."))
@@ -99,8 +99,16 @@ def getSongYoutube(submission, c):
 		#Add song to database
 		submission_audio 		= submission_video.getbestaudio()
 		logger.info('Downloaded: %s FROM %s', str(submission.title.encode('utf-8')), str(submission.url))
-		song_title  = submission.title.split("-")[1].strip()
-		song_artist = submission.title.split("-")[0].strip()
+		song_title  = ""
+		song_artist = ""
+		try:
+			song_title  = submission.title.split("-")[1].strip()
+			song_artist = submission.title.split("-")[0].strip()
+		except IndexError as err:
+			song_title  = submission.title
+			song_artist = "Unkown"
+			logger.error("IndexError: %s, trying to split submission title.", str(err))
+
 		try:
 			submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
 			c.execute("INSERT OR REPLACE INTO songs (submission_title, submission_url, artist, song_title, song_url) VALUES (?, ?, ?, ?, ?);", (submission.title, submission.url, song_artist.strip(), song_title.strip(), submission.url))
