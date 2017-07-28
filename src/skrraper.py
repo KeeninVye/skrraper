@@ -91,7 +91,7 @@ def getSongYoutube(submission, c):
 		else:#Add song to retry list/database
 			logger.warn('Could not find song: %s', str(submission.title.encode('utf-8')))
 
-			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url) VALUES (?, ?);", (submission.title, submission.url, "Song not found."))
+			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, "Song not found."))
 		return
 	#Add more checks for valid video
 	if((submission_video.length >= 90) and (submission_video.length <= 330)):
@@ -170,7 +170,7 @@ if(__name__ == "__main__"):
 
 	""" Create Tables """
 	c.execute("CREATE TABLE IF NOT EXISTS songs (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, artist text NOT NULL, song_title text NOT NULL, song_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP, updateDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
-	c.execute("CREATE TABLE IF NOT EXISTS retry (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
+	c.execute("CREATE TABLE IF NOT EXISTS retry (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, error text NOT NULL, addDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
 	conn.commit()
 
 	main(config, conn)
