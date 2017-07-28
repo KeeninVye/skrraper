@@ -87,10 +87,10 @@ def getSongYoutube(submission, c):
 			try:
 				submission_video 	= pafy.new(submission.url)
 			except ValueError:
-				logger.error("ValueError trying to search for %s", submission.url)
+				logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
+				c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, str(err)))
 		else:#Add song to retry list/database
 			logger.warn('Could not find song: %s', str(submission.title.encode('utf-8')))
-
 			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, "Song not found."))
 		return
 	#Add more checks for valid video
@@ -106,10 +106,10 @@ def getSongYoutube(submission, c):
 			c.execute("INSERT OR REPLACE INTO songs (submission_title, submission_url, artist, song_title, song_url) VALUES (?, ?, ?, ?, ?);", (submission.title, submission.url, song_artist.strip(), song_title.strip(), submission.url))
 		except ValueError as err:
 			logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
-			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, err))
+			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, str(err)))
 		except IOError as err:
 			logger.error("IOError : %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
-			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, err))
+			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, str(err)))
 	return
 
 def main(config, conn):
