@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import csv, json, os, traceback, datetime, time, praw, requests, pafy, logging, sys
+import csv, json, os, traceback, datetime, time, praw, requests, pafy, logging, sys, sqlite3
 from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 from logging.config import dictConfig
@@ -60,7 +60,7 @@ def parseTitle(submission):
 	"""
 	return submission.title.split("]",1)[1].split("(",1)[0].strip()
 
-def getSongYoutube(submission):
+def getSongYoutube(submission, c):
 	"""
 	Get Song From Youtube
 	Check url of song
@@ -75,33 +75,48 @@ def getSongYoutube(submission):
 			submission_video = pafy.new(submission.url)
 		except IOError as err:
 			logger.error("IOError error: {0}".format(err))
+		except ValueError as err:
+			logger.error("IOError error: {0}".format(err))
 
-	else:
+	if(None == submission_video):
 		youtube_html	 		= requests.get('https://www.youtube.com/results',params={'search_query': submission.title})
 		youtube_content			= BeautifulSoup(youtube_html.content)
 		youtube_results			= youtube_content.findAll("a", "yt-uix-tile-link yt-ui-ellipsis yt-ui-ellipsis-2 yt-uix-sessionlink      spf-link ")
 		if youtube_results:
-			submission.url 		= 'https://www.youtube.com'+str(youtube_results[0]['href'])
-			submission_video 	= pafy.new(submission.url)
-	if(None == submission_video):
-		#Add song to retry list/database
-		logger.warn('Could not find song: %s', submission.title)
-		return
+			submission.url 		= 'https://www.youtube.com'+str(youtube_results[0]['href'].encode('utf-8'))
+			try:
+				submission_video 	= pafy.new(submission.url)
+			except ValueError:
+				logger.error("ValueError trying to search for %s", submission.url)
+		else:#Add song to retry list/database
+			logger.warn('Could not find song: %s', str(submission.title.encode('utf-8')))
+
+			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url) VALUES (?, ?);", (submission.title, submission.url, "Song not found."))
+			return
 	#Add more checks for valid video
 	if((submission_video.length >= 90) and (submission_video.length <= 330)):
 		#Send complete message to Slack
 		#Add song to database
 		submission_audio 		= submission_video.getbestaudio()
-		logger.info('Downloaded: %s', str(submission.title.encode('utf-8')))
-		submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
+		logger.info('Downloaded: %s FROM %s', str(submission.title.encode('utf-8')), str(submission.url))
+		song_title  = submission.title.split("-")[1].strip()
+		song_artist = submission.title.split("-")[0].strip()
+		try:
+			#submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
+			c.execute("INSERT OR REPLACE INTO songs (submission_title, submission_url, artist, song_title, song_url) VALUES (?, ?, ?, ?, ?);", (submission.title, submission.url, song_artist.strip(), song_title.strip(), submission.url))
+		except ValueError as err:
+			logger.error("ValueError trying to download: %s FROM %s", str(submission.title.encode('utf-8')), str(submission.url))
+			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, submission.url, err))
+	return
 
-def main(config):
+def main(config, conn):
 	"""
 	Main
 	Query Reddit
 	Create Reddit object from library praw
 	Get and download song from Youtube
 	"""
+
 	reddit = praw.Reddit(client_id=config['client']['client_id'],
 					 client_secret=config['client']['client_secret'],
 					 user_agent=config['client']['user_agent'])
@@ -109,7 +124,8 @@ def main(config):
 	for submission in subreddit.search('FRESH', sort='new', time_filter='hour', limit=100):
 		if(('[FRESH]' in submission.title) or ('[FRESH VIDEO]' in submission.title)):
 			submission.title = parseTitle(submission)
-			getSongYoutube(submission)
+			getSongYoutube(submission, c)
+			conn.commit()
 	return
 
 def checkDirectories(config):
@@ -122,6 +138,8 @@ def checkDirectories(config):
 		os.makedirs(config['retry']['retry_dir'])
 	if not os.path.exists(config['song']['song_dir']):
 		os.makedirs(config['song']['song_dir'])
+	if not os.path.exists(config['database']['db_dir']):
+		os.makedirs(config['database']['db_dir'])
 
 	if not os.path.join(config['retry']['retry_file']):
 		f = open(retry_dir_file, 'w')
@@ -140,4 +158,18 @@ if(__name__ == "__main__"):
 
 	config		= readConfig(env)
 	checkDirectories(config)
-	main(config)
+	db_path		= str(config['database']['db_dir']+config['database']['db_name'])
+	songTable 	= str(config['database']['db_song_table'])
+	retryTable 	= str(config['database']['db_retry_table'])
+	conn 		= sqlite3.connect(db_path)
+	c      		= conn.cursor()
+
+	""" Create Tables """
+	if(c.execute("SELECT ? FROM sqlite_master WHERE type='table' AND name='table_name';", (songTable,)).fetchone() is None):
+		c.execute("CREATE TABLE songs (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, artist text NOT NULL, song_title text NOT NULL, song_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP, updateDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
+
+	if(c.execute("SELECT ? FROM sqlite_master WHERE type='table' AND name='table_name';", (retryTable,)).fetchone() is None):
+		c.execute("CREATE TABLE retry (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
+	conn.commit()
+
+	main(config, conn)
