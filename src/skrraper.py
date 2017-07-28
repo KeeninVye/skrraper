@@ -102,7 +102,7 @@ def getSongYoutube(submission, c):
 		song_title  = submission.title.split("-")[1].strip()
 		song_artist = submission.title.split("-")[0].strip()
 		try:
-			#submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
+			submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
 			c.execute("INSERT OR REPLACE INTO songs (submission_title, submission_url, artist, song_title, song_url) VALUES (?, ?, ?, ?, ?);", (submission.title, submission.url, song_artist.strip(), song_title.strip(), submission.url))
 		except ValueError as err:
 			logger.error("ValueError trying to download: %s FROM %s", str(submission.title.encode('utf-8')), str(submission.url))
@@ -164,12 +164,10 @@ if(__name__ == "__main__"):
 	conn 		= sqlite3.connect(db_path)
 	c      		= conn.cursor()
 
-	""" Create Tables """
-	if(c.execute("SELECT ? FROM sqlite_master WHERE type='table' AND name='table_name';", (songTable,)).fetchone() is None):
-		c.execute("CREATE TABLE songs (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, artist text NOT NULL, song_title text NOT NULL, song_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP, updateDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
 
-	if(c.execute("SELECT ? FROM sqlite_master WHERE type='table' AND name='table_name';", (retryTable,)).fetchone() is None):
-		c.execute("CREATE TABLE retry (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
+	""" Create Tables """
+	c.execute("CREATE TABLE IF NOT EXISTS songs (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, artist text NOT NULL, song_title text NOT NULL, song_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP, updateDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
+	c.execute("CREATE TABLE IF NOT EXISTS retry (submission_title text NOT NULL, submission_url text NOT NULL UNIQUE, addDate DATETIME DEFAULT CURRENT_TIMESTAMP);",)
 	conn.commit()
 
 	main(config, conn)
