@@ -92,7 +92,7 @@ def getSongYoutube(submission, c):
 			logger.warn('Could not find song: %s', str(submission.title.encode('utf-8')))
 
 			c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url) VALUES (?, ?);", (submission.title, submission.url, "Song not found."))
-			return
+		return
 	#Add more checks for valid video
 	if((submission_video.length >= 90) and (submission_video.length <= 330)):
 		#Send complete message to Slack
