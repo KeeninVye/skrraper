@@ -74,9 +74,9 @@ def getSongYoutube(submission, c):
 		try:
 			submission_video = pafy.new(str(submission.url))
 		except IOError as err:
-			logger.error("IOError error: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
+			logger.error("IOError: %s, trying to get video from predefined link: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
 		except ValueError as err:
-			logger.error("ValueError error: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
+			logger.error("ValueError: %s, trying to get video from predefined link: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
 
 	if(None == submission_video):
 		youtube_html	 		= requests.get('https://www.youtube.com/results',params={'search_query': submission.title})
@@ -87,7 +87,7 @@ def getSongYoutube(submission, c):
 			try:
 				submission_video 	= pafy.new(str(submission.url))
 			except ValueError as err:
-				logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
+				logger.error("ValueError: %s, trying to get video from contstructed URL: %s FROM %s", str(err), str(submission.url), str(submission.title.encode('utf-8')))
 				c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, str(submission.url), str(err)))
 		else:#Add song to retry list/database
 			logger.warn('Could not find song: %s', str(submission.title.encode('utf-8')))
