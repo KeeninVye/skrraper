@@ -86,7 +86,7 @@ def getSongYoutube(submission, c):
 			submission.url 		= 'https://www.youtube.com'+str(youtube_results[0]['href'].encode('utf-8'))
 			try:
 				submission_video 	= pafy.new(str(submission.url))
-			except ValueError:
+			except ValueError as err:
 				logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
 				c.execute("INSERT OR REPLACE INTO retry (submission_title, submission_url, error) VALUES (?, ?, ?);", (submission.title, str(submission.url), str(err)))
 		else:#Add song to retry list/database
