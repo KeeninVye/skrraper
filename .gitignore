@@ -90,6 +90,9 @@ ENV/
 
 #skrraper settings
 retry/
+retry/*
 songs/
+songs/*
 log/
+log/*
 *.log
