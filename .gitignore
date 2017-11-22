@@ -96,3 +96,5 @@ songs/*
 log/
 log/*
 *.log
+db/
+db/*
