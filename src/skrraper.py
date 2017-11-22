@@ -98,7 +98,6 @@ def getSongYoutube(submission, c):
 		#Send complete message to Slack
 		#Add song to database
 		submission_audio 		= submission_video.getbestaudio()
-		logger.info('Downloaded: %s FROM %s', str(submission.title.encode('utf-8')), str(submission.url))
 		song_title  = ""
 		song_artist = ""
 		try:
@@ -111,6 +110,7 @@ def getSongYoutube(submission, c):
 
 		try:
 			submission_audio.download(filepath=config['song']['song_dir'], quiet=True)
+			logger.info('Downloaded: %s FROM %s', str(submission.title.encode('utf-8')), str(submission.url))
 			c.execute("INSERT OR REPLACE INTO songs (submission_title, submission_url, artist, song_title, song_url) VALUES (?, ?, ?, ?, ?);", (submission.title, submission.url, song_artist.strip(), song_title.strip(), submission.url))
 		except ValueError as err:
 			logger.error("ValueError: %s, trying to download: %s FROM %s", str(err), str(submission.title.encode('utf-8')), str(submission.url))
